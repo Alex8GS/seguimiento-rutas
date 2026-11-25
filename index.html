@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b3d91">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Seguimiento de Rutas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{--bg:#eef3f9;--card:#ffffff;--fg:#14213d;--mut:#5b6b82;--line:#dbe3ee;--g1:#0b3d91;--g2:#00a6a6;--acc:#0b6fbf;--accfg:#fff;--hot:#ff7a1a;--ok:#12a150;--warn:#e08a00;--bad:#e5383b;--chip:#e7eef8;--sh:0 8px 24px rgba(11,61,145,.10)}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#121c2e;--fg:#e9f0fa;--mut:#93a3bb;--line:#24324a;--g1:#123a7a;--g2:#008c8c;--acc:#3fa1ff;--accfg:#04101f;--hot:#ff8f3d;--ok:#35c77a;--warn:#f0a63a;--bad:#ff5c5f;--chip:#1a2740;--sh:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;min-height:100vh;background:radial-gradient(1200px 500px at 50% -200px,color-mix(in srgb,var(--g2) 18%,transparent),transparent),var(--bg);color:var(--fg);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(120deg,var(--g1),var(--g2));color:#fff;padding:calc(14px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));display:flex;align-items:center;gap:12px;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+header .logo{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:20px}
+header h1{font:700 18px/1.1 Poppins,Inter,sans-serif;margin:0;flex:1;letter-spacing:.2px}
+header h1 small{display:block;font:500 12px Inter,sans-serif;opacity:.85;letter-spacing:.3px}
+#reloj{font:600 15px Poppins,sans-serif;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.16);padding:6px 10px;border-radius:10px}
+header button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:10px;padding:7px 10px;font:600 13px Inter,sans-serif}
+nav{display:flex;gap:6px;max-width:640px;margin:14px auto 0;padding:5px;background:var(--card);border-radius:14px;box-shadow:var(--sh);width:calc(100% - 32px)}
+nav button{flex:1;padding:10px 6px;border:0;border-radius:10px;background:none;color:var(--mut);font:600 14px Inter,sans-serif;transition:.2s}
+nav button.on{background:linear-gradient(120deg,var(--g1),var(--g2));color:#fff;box-shadow:0 4px 12px rgba(0,120,160,.3)}
+main{max-width:640px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:16px;margin-bottom:16px;box-shadow:var(--sh)}
+label{font-weight:600;font-size:13px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+input,select,textarea{width:100%;font:500 17px Inter,sans-serif;padding:13px 14px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);transition:border-color .15s}
+#ced{font:700 24px Poppins,sans-serif;letter-spacing:2px;text-align:center}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 18%,transparent)}
+button:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+textarea{min-height:84px;resize:vertical}
+.seg{display:flex;gap:10px;flex-wrap:wrap}
+.seg button{flex:1;min-width:92px;padding:14px 8px;border:2px solid var(--line);border-radius:14px;background:var(--bg);color:var(--fg);font:600 15px Inter,sans-serif;transition:transform .1s}
+.seg button:active{transform:scale(.97)}
+.seg button.on{background:var(--acc);color:#fff;border-color:transparent;box-shadow:0 6px 14px color-mix(in srgb,var(--acc) 35%,transparent)}
+#sUso button[data-x="Sí"].on{background:var(--ok);box-shadow:0 6px 14px color-mix(in srgb,var(--ok) 35%,transparent)}
+#sUso button[data-x="No"].on{background:var(--bad);box-shadow:0 6px 14px color-mix(in srgb,var(--bad) 35%,transparent)}
+#sCambio button.on:not([data-x="Ninguno"]){background:var(--hot);box-shadow:0 6px 14px color-mix(in srgb,var(--hot) 35%,transparent)}
+.btn{width:100%;padding:15px;border:0;border-radius:14px;background:linear-gradient(120deg,var(--g1),var(--g2));color:#fff;font:700 16px Poppins,sans-serif;letter-spacing:.3px;box-shadow:0 8px 18px rgba(0,120,160,.28);transition:transform .1s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.6}
+#bEnviar{background:linear-gradient(120deg,var(--hot),#ff4d6d);box-shadow:0 8px 18px rgba(255,90,60,.3)}
+.btn.sec{background:var(--chip);color:var(--fg);box-shadow:none;font:600 14px Inter,sans-serif}
+.btn.del{background:var(--bad);box-shadow:none;font:600 14px Inter,sans-serif}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+.hint{font-size:13px;color:var(--mut);margin:0}
+.stats{display:flex;gap:10px}.stats div{flex:1;border-radius:14px;padding:12px 6px;text-align:center;color:#fff}
+.stats div:nth-child(1){background:linear-gradient(135deg,var(--g1),var(--acc))}.stats div:nth-child(2){background:linear-gradient(135deg,var(--hot),#ff4d6d)}.stats div:nth-child(3){background:linear-gradient(135deg,var(--g2),var(--ok))}
+.stats b{display:block;font:700 28px Poppins,sans-serif;font-variant-numeric:tabular-nums}
+.stats span{font-size:12px;opacity:.92;font-weight:600}
+.item{border-top:1px solid var(--line);padding:12px 0;display:grid;gap:4px}
+.item:first-child{border-top:0}
+.item .t{display:flex;justify-content:space-between;gap:8px;font:600 16px Poppins,sans-serif}
+.item small{color:var(--mut)}
+.pill{font:600 12px Inter,sans-serif;padding:3px 10px;border-radius:99px;white-space:nowrap;color:#fff}
+.pill.ok{background:var(--ok)}.pill.pend{background:var(--warn)}.pill.anul{background:var(--bad)}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));max-width:520px;margin:auto;background:var(--fg);color:var(--bg);padding:14px;border-radius:14px;text-align:center;z-index:20;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+#modal{position:fixed;inset:0;background:rgba(5,15,35,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;z-index:15;padding:16px}
+#modal .card{width:100%;max-width:520px;max-height:90vh;overflow:auto;margin:0}
+.placa{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:6px;border-radius:10px;background:var(--chip);font:600 15px Poppins,sans-serif;letter-spacing:1px}
+.placa button{border:0;background:none;color:var(--bad);font-size:22px;line-height:1}
+h2{font:700 17px Poppins,sans-serif;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="logo">🚌</div><h1>Seguimiento de Rutas<small>Registro diario</small></h1><span id="reloj"></span><button id="bAdmin">🔒 Admin</button></header>
+<nav><button data-v="reg" class="on">Registrar</button><button data-v="hoy">Registros de hoy</button><button data-v="adm" id="tabAdm" hidden>Administrador</button></nav>
+<main>
+<!-- REGISTRAR -->
+<section id="v-reg">
+ <form class="card" id="fReg" autocomplete="off">
+  <div><label for="ced">Número de cédula</label><input id="ced" inputmode="numeric" pattern="[0-9]{5,12}" maxlength="12" placeholder="Ej. 1023456789" required></div>
+  <div><label for="placa">Placa</label><select id="placa" required></select></div>
+  <div><label>¿Usó la ruta?</label><div class="seg" id="sUso"><button type="button" data-x="Sí">Sí</button><button type="button" data-x="No">No</button></div></div>
+  <div><label>Cambio de transporte</label><div class="seg" id="sCambio"><button type="button" data-x="Ninguno" class="on">Ninguno</button><button type="button" data-x="Ruta → Moto">Ruta → Moto</button><button type="button" data-x="Moto → Ruta">Moto → Ruta</button></div></div>
+  <div><label for="obs">Observaciones</label><textarea id="obs" maxlength="500" placeholder="Opcional"></textarea></div>
+  <button class="btn" type="submit">Guardar registro</button>
+  <p class="hint">La fecha y hora se guardan automáticamente. Cada registro queda en este teléfono hasta que se envíe.</p>
+ </form>
+</section>
+<!-- HOY -->
+<section id="v-hoy" hidden>
+ <div class="card">
+  <div class="stats"><div><b id="nHoy">0</b><span>Hoy</span></div><div><b id="nPend">0</b><span>Por enviar</span></div><div><b id="nUso">0</b><span>Usaron ruta</span></div></div>
+  <button class="btn" id="bEnviar">Enviar registros pendientes</button>
+  <div class="row"><button class="btn sec" id="bCsv">Descargar copia (CSV)</button><button class="btn sec" id="bShare">Compartir CSV</button></div>
+  <p class="hint" id="estadoEnvio"></p>
+ </div>
+ <div class="card" id="listaHoy"></div>
+</section>
+<!-- ADMIN -->
+<section id="v-adm" hidden>
+ <div class="card">
+  <h2>Configuración</h2>
+  <div><label for="cPunto">Punto / operador (aparece en cada registro)</label><input id="cPunto" placeholder="Ej. Portería norte"></div>
+  <div><label for="cCorreo">Correo(s) destino (separados por coma)</label><input id="cCorreo" type="text" inputmode="email" placeholder="supervisor@empresa.com"></div>
+  <div><label for="cUrl">URL de Google Sheets (Apps Script)</label><input id="cUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+  <div><label for="cToken">Clave compartida con la hoja</label><input id="cToken" placeholder="La misma que pusiste en el script"></div>
+  <div><label for="cAuto"><input type="checkbox" id="cAuto" style="width:auto"> Descargar copia CSV automáticamente al enviar</label></div>
+  <div class="row"><button class="btn" id="bGuardarCfg">Guardar configuración</button><button class="btn sec" id="bProbar">Probar conexión</button></div>
+ </div>
+ <div class="card">
+  <h2>Lista de placas</h2>
+  <div class="row"><input id="nuevaPlaca" placeholder="ABC123" style="text-transform:uppercase"><button class="btn" id="bAddPlaca" style="flex:0 0 110px">Agregar</button></div>
+  <button class="btn sec" id="bSyncPlacas">Traer placas desde Google Sheets</button>
+  <div id="listaPlacas"></div>
+ </div>
+ <div class="card">
+  <h2>Registros</h2>
+  <div class="row"><input type="date" id="fDesde"><input type="date" id="fHasta"></div>
+  <input id="fCed" placeholder="Buscar cédula o placa">
+  <div class="row"><button class="btn sec" id="bCsvAll">Exportar filtrados (CSV)</button><button class="btn sec" id="bReenviar">Marcar filtrados como pendientes</button></div>
+  <div id="listaAdm"></div>
+ </div>
+ <div class="card">
+  <h2>Seguridad</h2>
+  <button class="btn sec" id="bPin">Cambiar PIN</button>
+  <button class="btn sec" id="bSalir">Cerrar sesión de administrador</button>
+  <button class="btn del" id="bPurgar">Borrar registros ya enviados de más de 30 días</button>
+ </div>
+</section>
+</main>
+<div id="modal" hidden></div>
+<div id="toast" hidden></div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const K={rec:'sr_registros',cfg:'sr_config',pla:'sr_placas',pin:'sr_pin',bloq:'sr_bloqueo'};
+const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast('No se pudo guardar en el teléfono')}};
+let R=load(K.rec,[]), C=Object.assign({punto:'',correo:'',url:'',token:'',auto:true},load(K.cfg,{})), P=load(K.pla,['ABC123','DEF456','GHI789']);
+let admin=false, admTimer=null, uso='', cambio='Ninguno';
+const pad=n=>String(n).padStart(2,'0');
+const fFecha=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fHora=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const hoy=()=>fFecha(new Date());
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,3000)}
+function persist(){save(K.rec,R)}
+async function hash(s){s='sr-salt|'+s;try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return 'f'+h}}
+
+/* Modal propio (sin alert/confirm) */
+function modal(html,onReady){const m=$('#modal');m.innerHTML=`<div class="card">${html}</div>`;m.hidden=false;onReady&&onReady(m);m.onclick=e=>{if(e.target===m)cerrar()}}
+function cerrar(){$('#modal').hidden=true;$('#modal').innerHTML=''}
+function confirmar(msg,ok,txt='Sí, continuar'){modal(`<p>${msg}</p><div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">${txt}</button></div>`,m=>{$('#mNo').onclick=cerrar;$('#mSi').onclick=()=>{cerrar();ok()}})}
+
+/* Reloj */
+const tic=()=>{const d=new Date();$('#reloj').textContent=fHora(d).slice(0,5)};tic();setInterval(tic,1000);
+
+/* Navegación */
+function ver(v){$$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));['reg','hoy','adm'].forEach(x=>$('#v-'+x).hidden=x!==v);if(v==='hoy')pintarHoy();if(v==='adm')pintarAdm()}
+$$('nav button').forEach(b=>b.onclick=()=>ver(b.dataset.v));
+
+/* Formulario */
+function pintarPlacas(){const s=$('#placa');s.innerHTML='<option value="">Seleccione la placa…</option>'+P.map(p=>`<option>${esc(p)}</option>`).join('')}
+function seg(id,cb){$$('#'+id+' button').forEach(b=>b.onclick=()=>{$$('#'+id+' button').forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset.x)})}
+seg('sUso',v=>uso=v);seg('sCambio',v=>cambio=v);
+$('#ced').oninput=e=>e.target.value=e.target.value.replace(/\D/g,'');
+$('#fReg').onsubmit=e=>{e.preventDefault();
+ const ced=$('#ced').value.trim(), placa=$('#placa').value;
+ if(!/^\d{5,12}$/.test(ced))return toast('La cédula debe tener entre 5 y 12 números');
+ if(!placa)return toast('Seleccione una placa');
+ if(!uso)return toast('Indique si usó la ruta');
+ const previo=R.find(r=>r.cedula===ced&&r.fecha===hoy()&&r.estado!=='Anulado');
+ const guardar=()=>{const d=new Date();
+  R.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),fecha:fFecha(d),hora:fHora(d),cedula:ced,placa,uso,cambio,obs:$('#obs').value.trim(),punto:C.punto,estado:'Activo',enviado:false,editado:''});
+  persist();$('#fReg').reset();uso='';cambio='Ninguno';$$('#sUso button').forEach(b=>b.classList.remove('on'));$$('#sCambio button').forEach(b=>b.classList.toggle('on',b.dataset.x==='Ninguno'));
+  toast('Registro guardado '+fHora(d).slice(0,5));$('#ced').focus()};
+ previo?confirmar(`La cédula <b>${esc(ced)}</b> ya se registró hoy a las ${previo.hora.slice(0,5)}. ¿Guardar otro registro?`,guardar,'Guardar de todos modos'):guardar()};
+
+/* Lista de hoy */
+function itemHTML(r,editable){const st=r.estado==='Anulado'?'<span class="pill anul">Anulado</span>':r.enviado?'<span class="pill ok">Enviado</span>':'<span class="pill pend">Pendiente</span>';
+ return `<div class="item"><div class="t"><span>${esc(r.cedula)} · ${esc(r.placa)}</span>${st}</div><small>${r.fecha} ${r.hora.slice(0,5)} · Usó ruta: ${esc(r.uso)} · ${esc(r.cambio)}${r.editado?' · editado':''}</small>${r.obs?`<small>${esc(r.obs)}</small>`:''}${editable?`<div class="row"><button class="btn sec" data-ed="${r.id}">Editar</button><button class="btn sec" data-an="${r.id}">${r.estado==='Anulado'?'Reactivar':'Anular'}</button><button class="btn del" data-bo="${r.id}">Borrar</button></div>`:''}</div>`}
+function pintarHoy(){const h=R.filter(r=>r.fecha===hoy()&&r.estado!=='Anulado');
+ $('#nHoy').textContent=h.length;$('#nPend').textContent=R.filter(r=>!r.enviado).length;$('#nUso').textContent=h.filter(r=>r.uso==='Sí').length;
+ $('#listaHoy').innerHTML=h.length?h.slice().reverse().map(r=>itemHTML(r,false)).join(''):'<p class="hint">Aún no hay registros hoy.</p>';
+ $('#estadoEnvio').textContent=C.url?'Envío a Google Sheets'+(C.correo?' y correo':'')+' configurado.':C.correo?'Envío por correo (se abre tu app de correo).':'Sin destino configurado: pide al administrador que lo configure.'}
+
+/* CSV */
+const COLS=[['id','ID'],['fecha','Fecha'],['hora','Hora'],['cedula','Cédula'],['placa','Placa'],['uso','Usó ruta'],['cambio','Cambio'],['obs','Observaciones'],['punto','Punto/Operador'],['estado','Estado'],['editado','Editado']];
+function csv(rows){const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;return '﻿'+[COLS.map(c=>q(c[1])).join(';'),...rows.map(r=>COLS.map(c=>q(r[c[0]])).join(';'))].join('\r\n')}
+function nombre(){return `registros_${hoy()}_${fHora(new Date()).replace(/:/g,'')}.csv`}
+function descargar(rows){const b=new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nombre();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+$('#bCsv').onclick=()=>{const h=R.filter(r=>r.fecha===hoy());h.length?descargar(h):toast('No hay registros hoy')};
+$('#bShare').onclick=async()=>{const h=R.filter(r=>r.fecha===hoy());if(!h.length)return toast('No hay registros hoy');
+ const f=new File([csv(h)],nombre(),{type:'text/csv'});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Registros '+hoy()})}catch(e){}}else{descargar(h);toast('Este teléfono no permite compartir archivos; se descargó la copia')}};
+
+/* Envío */
+async function post(body){const r=await fetch(C.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return r.json()}
+$('#bEnviar').onclick=async()=>{const pend=R.filter(r=>!r.enviado);if(!pend.length)return toast('No hay registros pendientes');
+ if(!C.url&&!C.correo)return toast('Falta configurar el destino (Administrador)');
+ const btn=$('#bEnviar');btn.disabled=true;btn.textContent='Enviando…';
+ try{
+  if(C.auto)descargar(pend);
+  if(C.url){const res=await post({accion:'registrar',token:C.token,correo:C.correo,punto:C.punto,registros:pend});
+   if(!res.ok)throw new Error(res.error||'Respuesta inválida');
+   pend.forEach(r=>r.enviado=true);persist();toast(`Enviados ${res.recibidos} registros`+(res.correo?' y correo enviado':''));
+  }else{
+   const lineas=pend.map(r=>`${r.fecha} ${r.hora.slice(0,5)} | CC ${r.cedula} | ${r.placa} | Ruta: ${r.uso} | ${r.cambio}${r.obs?' | '+r.obs:''}${r.estado==='Anulado'?' | ANULADO':''}`);
+   let cuerpo=`Registros de ${C.punto||'punto sin nombre'} (${pend.length})\n\n`+lineas.join('\n');
+   if(cuerpo.length>1800)cuerpo=cuerpo.slice(0,1700)+'\n…(lista recortada; adjunte el CSV descargado)';
+   location.href=`mailto:${encodeURIComponent(C.correo).replace(/%2C/g,',')}?subject=${encodeURIComponent('Registros de rutas '+hoy())}&body=${encodeURIComponent(cuerpo)}`;
+   setTimeout(()=>confirmar('¿Se envió el correo? Si confirmas, los registros quedan marcados como enviados.',()=>{pend.forEach(r=>r.enviado=true);persist();pintarHoy()},'Sí, se envió'),800);
+  }
+ }catch(e){toast('No se pudo enviar: '+e.message+'. Los registros siguen guardados.')}
+ btn.disabled=false;btn.textContent='Enviar registros pendientes';pintarHoy()};
+
+/* Administrador */
+const DEF_PIN='1234';
+async function pinGuardado(){return load(K.pin,null)||await hash(DEF_PIN)}
+$('#bAdmin').onclick=()=>{if(admin)return ver('adm');
+ const b=load(K.bloq,{n:0,hasta:0});if(Date.now()<b.hasta)return toast(`Demasiados intentos. Espere ${Math.ceil((b.hasta-Date.now())/1000)} s`);
+ modal(`<h2>Acceso de administrador</h2><input id="mPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN"><div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">Entrar</button></div><p class="hint">${load(K.pin,null)?'':'PIN inicial: 1234. Cámbialo al entrar.'}</p>`,()=>{$('#mPin').focus();$('#mNo').onclick=cerrar;
+  const go=async()=>{if(await hash($('#mPin').value)===await pinGuardado()){save(K.bloq,{n:0,hasta:0});cerrar();entrar()}else{b.n++;if(b.n>=5){b.hasta=Date.now()+5*60000;b.n=0}save(K.bloq,b);cerrar();toast('PIN incorrecto')}};
+  $('#mSi').onclick=go;$('#mPin').onkeydown=e=>{if(e.key==='Enter')go()}})};
+function entrar(){admin=true;$('#tabAdm').hidden=false;$('#bAdmin').textContent='🔓 Admin';ver('adm');reloj5();if(!load(K.pin,null))setTimeout(cambiarPin,300)}
+function salir(){admin=false;$('#tabAdm').hidden=true;$('#bAdmin').textContent='🔒 Admin';ver('reg')}
+function reloj5(){clearTimeout(admTimer);if(admin)admTimer=setTimeout(()=>{salir();toast('Sesión de administrador cerrada por inactividad')},5*60000)}
+['click','keydown'].forEach(ev=>document.addEventListener(ev,reloj5));
+$('#bSalir').onclick=salir;
+function cambiarPin(){modal(`<h2>Nuevo PIN</h2><input id="p1" type="password" inputmode="numeric" maxlength="8" placeholder="4 a 8 números"><input id="p2" type="password" inputmode="numeric" maxlength="8" placeholder="Repetir PIN"><div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">Guardar PIN</button></div>`,()=>{$('#mNo').onclick=cerrar;$('#mSi').onclick=async()=>{const a=$('#p1').value,b=$('#p2').value;if(!/^\d{4,8}$/.test(a))return toast('El PIN debe tener 4 a 8 números');if(a!==b)return toast('Los PIN no coinciden');save(K.pin,await hash(a));cerrar();toast('PIN actualizado')}})}
+$('#bPin').onclick=cambiarPin;
+
+function pintarAdm(){if(!admin)return ver('reg');
+ $('#cPunto').value=C.punto;$('#cCorreo').value=C.correo;$('#cUrl').value=C.url;$('#cToken').value=C.token;$('#cAuto').checked=C.auto;
+ $('#listaPlacas').innerHTML=P.map((p,i)=>`<div class="placa"><span>${esc(p)}</span><button data-qp="${i}" aria-label="Quitar ${esc(p)}">×</button></div>`).join('')||'<p class="hint">Sin placas.</p>';
+ if(!$('#fDesde').value){$('#fDesde').value=hoy();$('#fHasta').value=hoy()}
+ pintarListaAdm()}
+function filtrados(){const d=$('#fDesde').value||'0000',h=$('#fHasta').value||'9999',q=$('#fCed').value.trim().toUpperCase();return R.filter(r=>r.fecha>=d&&r.fecha<=h&&(!q||r.cedula.includes(q)||r.placa.toUpperCase().includes(q)))}
+function pintarListaAdm(){const f=filtrados();$('#listaAdm').innerHTML=`<p class="hint">${f.length} registros</p>`+f.slice().reverse().map(r=>itemHTML(r,true)).join('')}
+['#fDesde','#fHasta','#fCed'].forEach(s=>$(s).oninput=pintarListaAdm);
+$('#bGuardarCfg').onclick=()=>{C={punto:$('#cPunto').value.trim(),correo:$('#cCorreo').value.replace(/\s/g,''),url:$('#cUrl').value.trim(),token:$('#cToken').value.trim(),auto:$('#cAuto').checked};
+ if(C.url&&!/^https:\/\/script\.google\.com\//.test(C.url))return toast('La URL debe empezar por https://script.google.com/');save(K.cfg,C);toast('Configuración guardada')};
+$('#bProbar').onclick=async()=>{const u=$('#cUrl').value.trim(),t=$('#cToken').value.trim();if(!u)return toast('Escribe la URL primero');
+ try{const r=await (await fetch(`${u}?accion=probar&token=${encodeURIComponent(t)}`)).json();toast(r.ok?'Conexión correcta con la hoja: '+r.hoja:'Error: '+r.error)}catch(e){toast('No hubo respuesta. Revisa la URL y que el script esté publicado para "Cualquier persona"')}};
+$('#bAddPlaca').onclick=()=>{const v=$('#nuevaPlaca').value.trim().toUpperCase().replace(/\s/g,'');if(!v)return;if(P.includes(v))return toast('Esa placa ya existe');P.push(v);P.sort();save(K.pla,P);$('#nuevaPlaca').value='';pintarPlacas();pintarAdm()};
+$('#bSyncPlacas').onclick=async()=>{if(!C.url)return toast('Configura y guarda primero la URL');
+ try{const r=await (await fetch(`${C.url}?accion=placas&token=${encodeURIComponent(C.token)}`)).json();if(!r.ok)throw new Error(r.error);P=[...new Set(r.placas.map(x=>String(x).trim().toUpperCase()).filter(Boolean))].sort();save(K.pla,P);pintarPlacas();pintarAdm();toast(P.length+' placas cargadas')}catch(e){toast('No se pudieron traer: '+e.message)}};
+document.addEventListener('click',e=>{const t=e.target;if(!admin)return;
+ if(t.dataset.qp!==undefined){const p=P[+t.dataset.qp];confirmar(`¿Quitar la placa ${esc(p)} de la lista?`,()=>{P.splice(+t.dataset.qp,1);save(K.pla,P);pintarPlacas();pintarAdm()})}
+ const r=R.find(x=>x.id===(t.dataset.ed||t.dataset.an||t.dataset.bo));if(!r)return;
+ if(t.dataset.an){r.estado=r.estado==='Anulado'?'Activo':'Anulado';r.editado=new Date().toLocaleString('es-CO');r.enviado=false;persist();pintarListaAdm();toast('Registro '+r.estado.toLowerCase()+'. Se actualizará en el próximo envío.')}
+ if(t.dataset.bo)confirmar(`¿Borrar definitivamente el registro de ${esc(r.cedula)}? Solo se borra de este teléfono; si ya se envió, en la hoja seguirá (mejor usa “Anular”).`,()=>{R=R.filter(x=>x!==r);persist();pintarListaAdm()},'Borrar');
+ if(t.dataset.ed)modal(`<h2>Editar registro</h2><small>${r.fecha} ${r.hora}</small><div><label for="eC">Cédula</label><input id="eC" inputmode="numeric" value="${esc(r.cedula)}"></div><div><label for="eP">Placa</label><select id="eP">${[...new Set([r.placa,...P])].map(p=>`<option ${p===r.placa?'selected':''}>${esc(p)}</option>`).join('')}</select></div><div><label for="eU">Usó la ruta</label><select id="eU"><option ${r.uso==='Sí'?'selected':''}>Sí</option><option ${r.uso==='No'?'selected':''}>No</option></select></div><div><label for="eK">Cambio</label><select id="eK">${['Ninguno','Ruta → Moto','Moto → Ruta'].map(c=>`<option ${c===r.cambio?'selected':''}>${c}</option>`).join('')}</select></div><div><label for="eO">Observaciones</label><textarea id="eO">${esc(r.obs)}</textarea></div><div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">Guardar cambios</button></div>`,()=>{$('#mNo').onclick=cerrar;$('#mSi').onclick=()=>{const c=$('#eC').value.replace(/\D/g,'');if(!/^\d{5,12}$/.test(c))return toast('Cédula inválida');Object.assign(r,{cedula:c,placa:$('#eP').value,uso:$('#eU').value,cambio:$('#eK').value,obs:$('#eO').value.trim(),editado:new Date().toLocaleString('es-CO'),enviado:false});persist();cerrar();pintarListaAdm();toast('Cambios guardados. Se actualizarán en la hoja en el próximo envío.')}})});
+$('#bCsvAll').onclick=()=>{const f=filtrados();f.length?descargar(f):toast('No hay registros en ese filtro')};
+$('#bReenviar').onclick=()=>{const f=filtrados();confirmar(`¿Marcar ${f.length} registros como pendientes para enviarlos otra vez? (En la hoja no se duplican.)`,()=>{f.forEach(r=>r.enviado=false);persist();pintarListaAdm()})};
+$('#bPurgar').onclick=()=>{const lim=fFecha(new Date(Date.now()-30*864e5)),v=R.filter(r=>r.enviado&&r.fecha<lim);if(!v.length)return toast('No hay registros enviados de más de 30 días');confirmar(`¿Borrar ${v.length} registros ya enviados (anteriores a ${lim}) de este teléfono?`,()=>{R=R.filter(r=>!v.includes(r));persist();pintarListaAdm()},'Borrar')};
+
+pintarPlacas();
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
