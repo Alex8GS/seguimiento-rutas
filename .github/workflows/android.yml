@@ -1,0 +1,38 @@
+name: Compilar app Android
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Copiar la app web dentro del APK
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp index.html manifest.json icon.svg android/app/src/main/assets/
+      - name: Compilar
+        run: gradle -p android assembleRelease --no-daemon
+      - run: cp android/app/build/outputs/apk/release/app-release.apk SeguimientoRutas.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SeguimientoRutas-apk
+          path: SeguimientoRutas.apk
+      - name: Publicar descarga
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: App Android 1.0.${{ github.run_number }}
+          body: Descarga SeguimientoRutas.apk en tu celular Android e instálalo.
+          files: SeguimientoRutas.apk
+          make_latest: true

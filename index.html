@@ -72,6 +72,7 @@ h2{font:700 17px Poppins,sans-serif;margin:0}
 <nav><button data-v="reg" class="on">Registrar</button><button data-v="hoy">Registros de hoy</button><button data-v="adm" id="tabAdm" hidden>Administrador</button></nav>
 <main>
 <!-- REGISTRAR -->
+<div id="aviso" class="card" hidden style="background:linear-gradient(120deg,var(--hot),#ff4d6d);color:#fff;border:0;font-weight:600"></div>
 <section id="v-reg">
  <form class="card" id="fReg" autocomplete="off">
   <div><label for="ced">Número de cédula</label><input id="ced" inputmode="numeric" pattern="[0-9]{5,12}" maxlength="12" placeholder="Ej. 1023456789" required></div>
@@ -185,9 +186,10 @@ function pintarHoy(){const h=R.filter(r=>r.fecha===hoy()&&r.estado!=='Anulado');
 const COLS=[['id','ID'],['fecha','Fecha'],['hora','Hora'],['cedula','Cédula'],['placa','Placa'],['uso','Usó ruta'],['cambio','Cambio'],['obs','Observaciones'],['punto','Punto/Operador'],['estado','Estado'],['editado','Editado']];
 function csv(rows){const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;return '﻿'+[COLS.map(c=>q(c[1])).join(';'),...rows.map(r=>COLS.map(c=>q(r[c[0]])).join(';'))].join('\r\n')}
 function nombre(){return `registros_${hoy()}_${fHora(new Date()).replace(/:/g,'')}.csv`}
-function descargar(rows){const b=new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nombre();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+function descargar(rows){if(window.Android&&Android.guardarArchivo){const r=Android.guardarArchivo(nombre(),csv(rows));toast(r?'Copia guardada en '+r:'No se pudo guardar la copia');return}
+ const b=new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nombre();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
 $('#bCsv').onclick=()=>{const h=R.filter(r=>r.fecha===hoy());h.length?descargar(h):toast('No hay registros hoy')};
-$('#bShare').onclick=async()=>{const h=R.filter(r=>r.fecha===hoy());if(!h.length)return toast('No hay registros hoy');
+$('#bShare').onclick=async()=>{const h=R.filter(r=>r.fecha===hoy());if(!h.length)return toast('No hay registros hoy');if(window.Android&&Android.compartir){Android.compartir(nombre(),csv(h));return}
  const f=new File([csv(h)],nombre(),{type:'text/csv'});
  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Registros '+hoy()})}catch(e){}}else{descargar(h);toast('Este teléfono no permite compartir archivos; se descargó la copia')}};
 
@@ -200,7 +202,7 @@ $('#bEnviar').onclick=async()=>{const pend=R.filter(r=>!r.enviado);if(!pend.leng
   if(C.auto)descargar(pend);
   if(C.url){const res=await post({accion:'registrar',token:C.token,correo:C.correo,punto:C.punto,registros:pend});
    if(!res.ok)throw new Error(res.error||'Respuesta inválida');
-   pend.forEach(r=>r.enviado=true);persist();toast(`Enviados ${res.recibidos} registros`+(res.correo?' y correo enviado':''));
+   pend.forEach(r=>r.enviado=true);persist();syncRemoto();toast(`Enviados ${res.recibidos} registros`+(res.correo?' y correo enviado':''));
   }else{
    const lineas=pend.map(r=>`${r.fecha} ${r.hora.slice(0,5)} | CC ${r.cedula} | ${r.placa} | Ruta: ${r.uso} | ${r.cambio}${r.obs?' | '+r.obs:''}${r.estado==='Anulado'?' | ANULADO':''}`);
    let cuerpo=`Registros de ${C.punto||'punto sin nombre'} (${pend.length})\n\n`+lineas.join('\n');
@@ -252,8 +254,17 @@ $('#bCsvAll').onclick=()=>{const f=filtrados();f.length?descargar(f):toast('No h
 $('#bReenviar').onclick=()=>{const f=filtrados();confirmar(`¿Marcar ${f.length} registros como pendientes para enviarlos otra vez? (En la hoja no se duplican.)`,()=>{f.forEach(r=>r.enviado=false);persist();pintarListaAdm()})};
 $('#bPurgar').onclick=()=>{const lim=fFecha(new Date(Date.now()-30*864e5)),v=R.filter(r=>r.enviado&&r.fecha<lim);if(!v.length)return toast('No hay registros enviados de más de 30 días');confirmar(`¿Borrar ${v.length} registros ya enviados (anteriores a ${lim}) de este teléfono?`,()=>{R=R.filter(r=>!v.includes(r));persist();pintarListaAdm()},'Borrar')};
 
-pintarPlacas();
-if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+/* Control remoto desde el portal: placas, correo, aviso y bloqueo */
+async function syncRemoto(){if(!C.url||!navigator.onLine)return;
+ try{const r=await (await fetch(`${C.url}?accion=config&token=${encodeURIComponent(C.token)}`)).json();if(!r.ok)return;
+  if(r.placas&&r.placas.length){P=[...new Set(r.placas.map(x=>String(x).trim().toUpperCase()))].sort();save(K.pla,P);pintarPlacas()}
+  if(r.correo){C.correo=r.correo;save(K.cfg,C)}
+  const av=$('#aviso');av.hidden=!r.aviso;av.textContent=r.aviso||'';
+  const bloq=r.activa===false;$$('#fReg input,#fReg select,#fReg textarea,#fReg button').forEach(e=>e.disabled=bloq);
+  if(bloq){av.hidden=false;av.textContent='La app está desactivada por el administrador. Los registros guardados se conservan.'}
+ }catch(e){}}
+pintarPlacas();syncRemoto();setInterval(syncRemoto,10*60000);window.addEventListener('online',syncRemoto);
+if(!window.Android&&'serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>

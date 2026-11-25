@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Portal de Control · Seguimiento de Rutas</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef3f9;--card:#fff;--fg:#14213d;--mut:#5b6b82;--line:#dbe3ee;--g1:#0b3d91;--g2:#00a6a6;--acc:#0b6fbf;--hot:#ff7a1a;--ok:#12a150;--warn:#e08a00;--bad:#e5383b;--chip:#e7eef8;--sh:0 8px 24px rgba(11,61,145,.10)}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#121c2e;--fg:#e9f0fa;--mut:#93a3bb;--line:#24324a;--g1:#123a7a;--g2:#008c8c;--acc:#3fa1ff;--chip:#1a2740;--sh:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 Inter,system-ui,sans-serif}
+header{background:linear-gradient(120deg,var(--g1),var(--g2));color:#fff;padding:16px max(16px,env(safe-area-inset-left));display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font:700 20px Poppins,sans-serif;margin:0;flex:1}
+header small{display:block;font:500 12px Inter;opacity:.85}
+header button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:10px;padding:7px 12px;font:600 13px Inter}
+nav{display:flex;gap:6px;max-width:1100px;margin:16px auto 0;padding:5px;background:var(--card);border-radius:14px;box-shadow:var(--sh);width:calc(100% - 32px);overflow-x:auto}
+nav button{flex:1;padding:10px 14px;border:0;border-radius:10px;background:none;color:var(--mut);font:600 14px Inter;white-space:nowrap}
+nav button.on{background:linear-gradient(120deg,var(--g1),var(--g2));color:#fff}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;margin-bottom:16px;box-shadow:var(--sh);min-width:0}
+h2{font:700 17px Poppins,sans-serif;margin:0}
+label{font:600 12px Inter;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);display:block;margin-bottom:5px}
+input,select,textarea{width:100%;font:500 15px Inter;padding:11px 12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc)}
+.btn{padding:12px 16px;border:0;border-radius:12px;background:linear-gradient(120deg,var(--g1),var(--g2));color:#fff;font:700 14px Poppins,sans-serif;cursor:pointer}
+.btn.sec{background:var(--chip);color:var(--fg);font:600 14px Inter}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.row>*{flex:1;min-width:150px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{border-radius:16px;padding:14px;color:#fff}
+.kpi b{display:block;font:700 30px Poppins,sans-serif;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;font-weight:600;opacity:.92}
+.k1{background:linear-gradient(135deg,var(--g1),var(--acc))}.k2{background:linear-gradient(135deg,var(--g2),var(--ok))}.k3{background:linear-gradient(135deg,var(--hot),#ff4d6d)}.k4{background:linear-gradient(135deg,#6a4cff,#b14cff)}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:110px 1fr 44px;gap:10px;align-items:center;font-size:14px}
+.bar i{display:block;height:14px;border-radius:7px;background:linear-gradient(90deg,var(--g1),var(--g2))}
+.bar em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font:600 12px Inter;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
+td.obs{white-space:normal;min-width:180px}
+td button{border:0;background:var(--chip);color:var(--fg);border-radius:8px;padding:5px 9px;font:600 12px Inter;cursor:pointer}
+.pill{font:600 12px Inter;padding:2px 9px;border-radius:99px;color:#fff}
+.pill.a{background:var(--ok)}.pill.n{background:var(--bad)}
+.hint{font-size:13px;color:var(--mut);margin:0}
+#login{max-width:440px;margin:40px auto}
+#toast{position:fixed;left:16px;right:16px;bottom:18px;max-width:520px;margin:auto;background:var(--fg);color:var(--bg);padding:13px;border-radius:12px;text-align:center;font-weight:600;z-index:20}
+#modal{position:fixed;inset:0;background:rgba(5,15,35,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:15}
+#modal .card{width:100%;max-width:480px;max-height:90vh;overflow:auto;margin:0}
+.sw{display:flex;align-items:center;gap:10px;font-weight:600}.sw input{width:auto;transform:scale(1.4)}
+</style>
+</head>
+<body>
+<header><h1>Portal de Control<small>Seguimiento de Rutas</small></h1><button id="bRefrescar" hidden>Actualizar</button><button id="bSalir" hidden>Salir</button></header>
+
+<div id="login" class="card" style="margin-inline:16px auto">
+ <h2>Entrar al portal</h2>
+ <div><label for="lUrl">URL del script de Google</label><input id="lUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+ <div><label for="lClave">Clave de administrador</label><input id="lClave" type="password"></div>
+ <label class="sw" for="lRec"><input type="checkbox" id="lRec"> Recordar en este equipo</label>
+ <button class="btn" id="bEntrar">Entrar</button>
+ <p class="hint">Usa la CLAVE_ADMIN que pusiste en el script. No es el PIN del celular.</p>
+</div>
+
+<div id="app" hidden>
+<nav><button data-v="res" class="on">Resumen</button><button data-v="reg">Registros</button><button data-v="pla">Placas</button><button data-v="cfg">Control de la app</button></nav>
+<main>
+ <section id="v-res">
+  <div class="card"><div class="row"><div><label for="rDesde">Desde</label><input type="date" id="rDesde"></div><div><label for="rHasta">Hasta</label><input type="date" id="rHasta"></div><button class="btn" id="bCargar" style="flex:0 0 auto">Consultar</button></div></div>
+  <div class="kpis"><div class="kpi k1"><b id="kTot">0</b><span>Registros</span></div><div class="kpi k2"><b id="kUso">0%</b><span>Usaron la ruta</span></div><div class="kpi k3"><b id="kCam">0</b><span>Cambios ruta ↔ moto</span></div><div class="kpi k4"><b id="kCed">0</b><span>Cédulas distintas</span></div></div>
+  <div class="card" style="margin-top:16px"><h2>Registros por placa</h2><div class="bars" id="porPlaca"></div></div>
+  <div class="card"><h2>Registros por día</h2><div class="bars" id="porDia"></div></div>
+ </section>
+ <section id="v-reg" hidden>
+  <div class="card">
+   <div class="row"><div><label for="fBus">Buscar</label><input id="fBus" placeholder="Cédula, placa u observación"></div><div><label for="fEst">Estado</label><select id="fEst"><option value="">Todos</option><option>Activo</option><option>Anulado</option></select></div><button class="btn sec" id="bCsv" style="flex:0 0 auto">Descargar CSV</button></div>
+   <p class="hint" id="nReg"></p>
+   <div class="tw"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Cédula</th><th>Placa</th><th>Usó ruta</th><th>Cambio</th><th>Observaciones</th><th>Punto</th><th>Estado</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+  </div>
+ </section>
+ <section id="v-pla" hidden>
+  <div class="card"><h2>Lista de placas</h2><p class="hint">Una placa por línea. Al guardar, los celulares la reciben al abrir la app o al enviar.</p><textarea id="tPlacas" rows="12" style="text-transform:uppercase;font-family:Poppins,sans-serif;letter-spacing:1px"></textarea><button class="btn" id="bPlacas">Guardar placas</button></div>
+ </section>
+ <section id="v-cfg" hidden>
+  <div class="card">
+   <h2>Control remoto de los celulares</h2>
+   <div><label for="cCorreo">Correo que recibe los envíos</label><input id="cCorreo" placeholder="supervisor@empresa.com, otro@empresa.com"></div>
+   <div><label for="cAviso">Aviso que se muestra en la app</label><input id="cAviso" maxlength="200" placeholder="Ej. Recuerden enviar los registros antes de las 6 p. m."></div>
+   <label class="sw" for="cActiva"><input type="checkbox" id="cActiva"> App activa (si la apagas, los celulares no pueden registrar)</label>
+   <button class="btn" id="bCfg">Guardar y aplicar</button>
+   <p class="hint">Los celulares toman estos cambios al abrir la app, cada 10 minutos y después de cada envío.</p>
+  </div>
+ </section>
+</main>
+</div>
+<div id="modal" hidden></div><div id="toast" hidden></div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0'),fF=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+let S={url:'',clave:''},D={registros:[],placas:[],config:{}};
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,3200)}
+try{S=JSON.parse(localStorage.getItem('portal')||sessionStorage.getItem('portal'))||S}catch(e){}
+async function api(body){const r=await fetch(S.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:S.clave},body))});const j=await r.json();if(!j.ok)throw new Error(j.error||'Error');return j}
+async function cargar(){const b=$('#bCargar');b.disabled=true;b.textContent='Cargando…';
+ try{D=await api({accion:'listar',desde:$('#rDesde').value,hasta:$('#rHasta').value});pintar();return true}catch(e){toast('No se pudo cargar: '+e.message);return false}finally{b.disabled=false;b.textContent='Consultar'}}
+$('#bEntrar').onclick=async()=>{S={url:$('#lUrl').value.trim(),clave:$('#lClave').value};if(!/^https:\/\/script\.google\.com\//.test(S.url))return toast('La URL debe empezar por https://script.google.com/');
+ if(await cargar()){try{($('#lRec').checked?localStorage:sessionStorage).setItem('portal',JSON.stringify(S))}catch(e){}entrar()}};
+function entrar(){$('#login').hidden=true;$('#app').hidden=false;$('#bSalir').hidden=false;$('#bRefrescar').hidden=false}
+$('#bSalir').onclick=()=>{try{localStorage.removeItem('portal');sessionStorage.removeItem('portal')}catch(e){}location.reload()};
+$('#bRefrescar').onclick=cargar;$('#bCargar').onclick=cargar;
+$$('nav button').forEach(b=>b.onclick=()=>{$$('nav button').forEach(x=>x.classList.toggle('on',x===b));['res','reg','pla','cfg'].forEach(v=>$('#v-'+v).hidden=v!==b.dataset.v)});
+function barras(el,obj){const e=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,20),m=Math.max(1,...e.map(x=>x[1]));el.innerHTML=e.length?e.map(([k,v])=>`<div class="bar"><span>${esc(k)}</span><i style="width:${v/m*100}%"></i><em>${v}</em></div>`).join(''):'<p class="hint">Sin datos en este rango.</p>'}
+function pintar(){const act=D.registros.filter(r=>r.estado!=='Anulado');
+ $('#kTot').textContent=act.length;$('#kUso').textContent=act.length?Math.round(act.filter(r=>r.uso==='Sí').length/act.length*100)+'%':'0%';
+ $('#kCam').textContent=act.filter(r=>r.cambio&&r.cambio!=='Ninguno').length;$('#kCed').textContent=new Set(act.map(r=>r.cedula)).size;
+ const pp={},pd={};act.forEach(r=>{pp[r.placa]=(pp[r.placa]||0)+1;pd[r.fecha]=(pd[r.fecha]||0)+1});barras($('#porPlaca'),pp);
+ const dias=Object.keys(pd).sort().reverse().slice(0,14);$('#porDia').innerHTML='';barras($('#porDia'),Object.fromEntries(dias.map(d=>[d,pd[d]])));
+ $('#tPlacas').value=D.placas.join('\n');$('#cCorreo').value=D.config.correo||'';$('#cAviso').value=D.config.aviso||'';$('#cActiva').checked=D.config.activa!=='NO';
+ tabla()}
+function filtrados(){const q=$('#fBus').value.trim().toLowerCase(),e=$('#fEst').value;return D.registros.filter(r=>(!e||r.estado===e)&&(!q||[r.cedula,r.placa,r.obs,r.punto].join(' ').toLowerCase().includes(q))).sort((a,b)=>(b.fecha+b.hora).localeCompare(a.fecha+a.hora))}
+function tabla(){const f=filtrados();$('#nReg').textContent=f.length+' registros';
+ $('#tb').innerHTML=f.slice(0,500).map(r=>`<tr><td>${esc(r.fecha)}</td><td>${esc(r.hora.slice(0,5))}</td><td><b>${esc(r.cedula)}</b></td><td>${esc(r.placa)}</td><td>${esc(r.uso)}</td><td>${esc(r.cambio)}</td><td class="obs">${esc(r.obs)}</td><td>${esc(r.punto)}</td><td><span class="pill ${r.estado==='Anulado'?'n':'a'}">${esc(r.estado)}</span></td><td><button data-ed="${esc(r.id)}">Editar</button></td></tr>`).join('')}
+$('#fBus').oninput=tabla;$('#fEst').onchange=tabla;
+$('#bCsv').onclick=()=>{const c=['fecha','hora','cedula','placa','uso','cambio','obs','punto','estado','editado'],q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+ const t='﻿'+[c.join(';'),...filtrados().map(r=>c.map(k=>q(r[k])).join(';'))].join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download=`registros_${fF(new Date())}.csv`;a.click()};
+document.addEventListener('click',e=>{const id=e.target.dataset&&e.target.dataset.ed;if(!id)return;const r=D.registros.find(x=>x.id===id);if(!r)return;
+ const m=$('#modal');m.hidden=false;m.innerHTML=`<div class="card"><h2>Editar registro</h2><p class="hint">${esc(r.fecha)} ${esc(r.hora)} · ${esc(r.punto)}</p>
+ <div><label for="eC">Cédula</label><input id="eC" value="${esc(r.cedula)}"></div><div><label for="eP">Placa</label><select id="eP">${[...new Set([r.placa,...D.placas])].map(p=>`<option ${p===r.placa?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+ <div class="row"><div><label for="eU">Usó la ruta</label><select id="eU">${['Sí','No'].map(x=>`<option ${x===r.uso?'selected':''}>${x}</option>`).join('')}</select></div><div><label for="eK">Cambio</label><select id="eK">${['Ninguno','Ruta → Moto','Moto → Ruta'].map(x=>`<option ${x===r.cambio?'selected':''}>${x}</option>`).join('')}</select></div></div>
+ <div><label for="eO">Observaciones</label><textarea id="eO">${esc(r.obs)}</textarea></div><div><label for="eE">Estado</label><select id="eE">${['Activo','Anulado'].map(x=>`<option ${x===r.estado?'selected':''}>${x}</option>`).join('')}</select></div>
+ <div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">Guardar</button></div></div>`;
+ $('#mNo').onclick=()=>m.hidden=true;
+ $('#mSi').onclick=async()=>{const n=Object.assign({},r,{cedula:$('#eC').value.replace(/\D/g,''),placa:$('#eP').value,uso:$('#eU').value,cambio:$('#eK').value,obs:$('#eO').value.trim(),estado:$('#eE').value});
+  if(!/^\d{5,12}$/.test(n.cedula))return toast('Cédula inválida');try{await api({accion:'actualizar',registro:n});Object.assign(r,n);m.hidden=true;pintar();toast('Registro actualizado en la hoja')}catch(err){toast('No se pudo guardar: '+err.message)}}});
+$('#bPlacas').onclick=async()=>{const p=[...new Set($('#tPlacas').value.split(/\n/).map(x=>x.trim().toUpperCase()).filter(Boolean))].sort();try{const r=await api({accion:'guardarPlacas',placas:p});D.placas=p;$('#tPlacas').value=p.join('\n');toast(r.total+' placas guardadas')}catch(e){toast('Error: '+e.message)}};
+$('#bCfg').onclick=async()=>{const c={correo:$('#cCorreo').value.replace(/\s/g,''),aviso:$('#cAviso').value.trim(),activa:$('#cActiva').checked?'SI':'NO'};try{await api({accion:'guardarConfig',config:c});D.config=c;toast('Cambios aplicados')}catch(e){toast('Error: '+e.message)}};
+const h=new Date();$('#rHasta').value=fF(h);$('#rDesde').value=fF(new Date(h-29*864e5));
+if(S.url&&S.clave){$('#lUrl').value=S.url;cargar().then(ok=>ok&&entrar())}
+</script>
+</body>
+</html>
