@@ -7,6 +7,7 @@
  * Si cambia el código: Implementar > Gestionar implementaciones > Editar > Nueva versión.
  */
 const CLAVE = 'CAMBIE-ESTA-CLAVE';
+const VERSION_SCRIPT = 4;
 const CLAVE_ADMIN = 'CAMBIE-CLAVE-ADMIN';
 const HOJA = 'Registros', HOJA_PLACAS = 'Placas', HOJA_CONFIG = 'Config';
 const ENC = ['ID','Fecha','Hora','Cédula','Placa','Usó ruta','Cambio','Observaciones','Punto/Operador','Estado','Editado','Recibido'];
@@ -60,7 +61,7 @@ function doGet(e){
   if (p.token !== CLAVE && p.token !== CLAVE_ADMIN) return json({ok:false, error:'Clave inválida'});
   if (p.accion === 'placas') return json({ok:true, placas:leerPlacas()});
   if (p.accion === 'config'){ const c = leerConfig(); return json({ok:true, placas:leerPlacas(), correo:c.correo, aviso:c.aviso, activa:c.activa !== 'NO'}); }
-  return json({ok:true, hoja:SpreadsheetApp.getActiveSpreadsheet().getName()});
+  return json({ok:true, version:VERSION_SCRIPT, hoja:SpreadsheetApp.getActiveSpreadsheet().getName()});
 }
 
 function doPost(e){
@@ -69,6 +70,11 @@ function doPost(e){
     const d = JSON.parse(e.postData.contents);
     const esAdmin = d.token === CLAVE_ADMIN;
     if (d.token !== CLAVE && !esAdmin) return json({ok:false, error:'Clave inválida'});
+    if (d.accion === 'diagnostico'){
+      const r = {ok:true, version:VERSION_SCRIPT, hoja:SpreadsheetApp.getActiveSpreadsheet().getName(), correo:leerConfig().correo || d.correo || ''};
+      try { r.cuotaCorreo = MailApp.getRemainingDailyQuota(); } catch (err) { r.correoError = String(err.message || err); }
+      return json(r);
+    }
 
     // ---- Acciones del portal (solo con CLAVE_ADMIN) ----
     if (d.accion && d.accion !== 'registrar'){

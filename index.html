@@ -104,6 +104,7 @@ h2{font:700 17px Poppins,sans-serif;margin:0}
   <div><label for="cToken">Clave compartida con la hoja</label><input id="cToken" placeholder="La misma que pusiste en el script"></div>
   <div><label for="cAuto"><input type="checkbox" id="cAuto" style="width:auto"> Descargar copia CSV automáticamente al enviar</label></div>
   <div class="row"><button class="btn" id="bGuardarCfg">Guardar configuración</button><button class="btn sec" id="bProbar">Probar conexión</button></div>
+  <button class="btn sec" id="bDiag">Diagnóstico completo (hoja y correo)</button>
  </div>
  <div class="card">
   <h2>Lista de placas</h2>
@@ -181,7 +182,7 @@ function itemHTML(r,editable){const st=r.estado==='Anulado'?'<span class="pill a
 function pintarHoy(){const h=R.filter(r=>r.fecha===hoy()&&r.estado!=='Anulado');
  $('#nHoy').textContent=h.length;$('#nPend').textContent=R.filter(r=>!r.enviado).length;$('#nUso').textContent=h.filter(r=>r.uso==='Sí').length;
  $('#listaHoy').innerHTML=h.length?h.slice().reverse().map(r=>itemHTML(r,false)).join(''):'<p class="hint">Aún no hay registros hoy.</p>';
- $('#estadoEnvio').textContent=C.url?'Cada registro se guarda solo en Google Sheets (en verde azulado: “En la hoja”). El botón Enviar manda el correo con el resumen.':C.correo?'Envío por correo (se abre tu app de correo).':'Sin destino configurado: pide al administrador que lo configure.'}
+ $('#estadoEnvio').textContent=errHoja?'⚠ No se está guardando en la hoja: '+errHoja+'. Pida al administrador usar Admin › Diagnóstico.':C.url?'Cada registro se guarda solo en Google Sheets (en verde azulado: “En la hoja”). El botón Enviar manda el correo con el resumen.':C.correo?'Envío por correo (se abre tu app de correo).':'Sin destino configurado: pide al administrador que lo configure.'}
 
 /* CSV */
 const COLS=[['id','ID'],['fecha','Fecha'],['hora','Hora'],['cedula','Cédula'],['placa','Placa'],['uso','Usó ruta'],['cambio','Cambio'],['obs','Observaciones'],['punto','Punto/Operador'],['estado','Estado'],['editado','Editado']];
@@ -195,7 +196,9 @@ $('#bShare').onclick=async()=>{const h=R.filter(r=>r.fecha===hoy());if(!h.length
  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Registros '+hoy()})}catch(e){}}else{descargar(h);toast('Este teléfono no permite compartir archivos; se descargó la copia')}};
 
 /* Envío */
-async function post(body){const r=await fetch(C.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return r.json()}
+function leerJSON(t){try{return JSON.parse(t)}catch(e){throw new Error(/<html|<!doctype/i.test(t)?'Google respondió con una página de inicio de sesión o de error: el script no está publicado para "Cualquier persona" o la URL no es la de /exec':'Respuesta inesperada del script')}}
+async function post(body,url){const r=await fetch(url||C.url,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return leerJSON(await r.text())}
+async function getJ(url){const r=await fetch(url,{redirect:'follow'});return leerJSON(await r.text())}
 $('#bEnviar').onclick=async()=>{const pend=R.filter(r=>!r.enviado);if(!pend.length)return toast('No hay registros pendientes');
  if(!C.url&&!C.correo)return toast('Falta configurar el destino (Administrador)');
  const btn=$('#bEnviar');btn.disabled=true;btn.textContent='Enviando…';
@@ -240,8 +243,28 @@ function pintarListaAdm(){const f=filtrados();$('#listaAdm').innerHTML=`<p class
 ['#fDesde','#fHasta','#fCed'].forEach(s=>$(s).oninput=pintarListaAdm);
 $('#bGuardarCfg').onclick=()=>{C={punto:$('#cPunto').value.trim(),correo:$('#cCorreo').value.replace(/\s/g,''),url:$('#cUrl').value.trim(),token:$('#cToken').value.trim(),auto:$('#cAuto').checked};
  if(C.url&&!/^https:\/\/script\.google\.com\//.test(C.url))return toast('La URL debe empezar por https://script.google.com/');save(K.cfg,C);toast('Configuración guardada')};
+$('#bDiag').onclick=async()=>{const u=$('#cUrl').value.trim(),t=$('#cToken').value.trim(),out=[];const L=(ok,m)=>out.push(`<p>${ok?'✅':'❌'} ${esc(m)}</p>`);
+ const show=()=>modal(`<h2>Diagnóstico</h2>${out.join('')}<button class="btn" id="mNo">Cerrar</button>`,()=>{$('#mNo').onclick=cerrar});
+ modal('<h2>Diagnóstico</h2><p>Revisando…</p>');
+ if(!u){L(false,'No hay URL del script en la configuración');return show()}
+ if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(u)){L(false,'La URL debe ser https://script.google.com/macros/s/…/exec (sin espacios ni nada después de /exec). Actual: '+u);return show()}
+ L(true,'Formato de la URL correcto');
+ if(!t){L(false,'Falta la clave compartida');return show()}
+ if(!navigator.onLine){L(false,'El teléfono no tiene internet');return show()}
+ try{const r=await getJ(u+'?accion=probar&token='+encodeURIComponent(t));if(!r.ok){L(false,'El script respondió: '+r.error+(r.error==='Clave inválida'?' (la clave no es igual a CLAVE del script)':''));return show()}
+  L(true,'Conexión con la hoja “'+r.hoja+'”');if(!r.version||r.version<4)L(false,'El script de Google es una versión antigua. Pegue el Codigo.gs nuevo y publique: Implementar › Gestionar implementaciones › Editar › Nueva versión');}
+ catch(e){L(false,'No se pudo leer el script: '+e.message);return show()}
+ try{const r=await post({accion:'diagnostico',token:t,correo:$('#cCorreo').value.trim()},u);
+  if(!r.ok||r.version===undefined){L(false,'Guardar en la hoja (POST) no responde como debe: '+(r.error||'versión antigua del script'))}
+  else{L(true,'La app puede escribir en la hoja');
+   if(r.correoError)L(false,'El script no tiene permiso para enviar correos. En Apps Script ejecute la función probarCorreo y acepte los permisos. Detalle: '+r.correoError);
+   else L(true,'Permiso de correo concedido. Correos disponibles hoy: '+r.cuotaCorreo);
+   L(!!r.correo,r.correo?'Correo destino: '+r.correo:'No hay correo destino (escríbalo arriba o en la pestaña Config de la hoja)')}}
+ catch(e){L(false,'Falló el envío de datos: '+e.message)}
+ const pend=R.filter(x=>!x.hoja).length;L(!pend,pend?pend+' registros todavía no están en la hoja (se subirán solos al corregir lo anterior)':'Todos los registros están en la hoja');
+ show();subirHoja()};
 $('#bProbar').onclick=async()=>{const u=$('#cUrl').value.trim(),t=$('#cToken').value.trim();if(!u)return toast('Escribe la URL primero');
- try{const r=await (await fetch(`${u}?accion=probar&token=${encodeURIComponent(t)}`)).json();toast(r.ok?'Conexión correcta con la hoja: '+r.hoja:'Error: '+r.error)}catch(e){toast('No hubo respuesta. Revisa la URL y que el script esté publicado para "Cualquier persona"')}};
+ try{const r=await getJ(`${u}?accion=probar&token=${encodeURIComponent(t)}`);toast(r.ok?'Conexión correcta con la hoja: '+r.hoja:'Error: '+r.error)}catch(e){toast('No hubo respuesta. Revisa la URL y que el script esté publicado para "Cualquier persona"')}};
 $('#bAddPlaca').onclick=()=>{const v=$('#nuevaPlaca').value.trim().toUpperCase().replace(/\s/g,'');if(!v)return;if(P.includes(v))return toast('Esa placa ya existe');P.push(v);P.sort();save(K.pla,P);$('#nuevaPlaca').value='';pintarPlacas();pintarAdm()};
 $('#bSyncPlacas').onclick=async()=>{if(!C.url)return toast('Configura y guarda primero la URL');
  try{const r=await (await fetch(`${C.url}?accion=placas&token=${encodeURIComponent(C.token)}`)).json();if(!r.ok)throw new Error(r.error);P=[...new Set(r.placas.map(x=>String(x).trim().toUpperCase()).filter(Boolean))].sort();save(K.pla,P);pintarPlacas();pintarAdm();toast(P.length+' placas cargadas')}catch(e){toast('No se pudieron traer: '+e.message)}};
@@ -265,11 +288,11 @@ async function syncRemoto(){if(!C.url||!navigator.onLine)return;
   if(bloq){av.hidden=false;av.textContent='La app está desactivada por el administrador. Los registros guardados se conservan.'}
  }catch(e){}}
 /* Sincronización automática con la hoja (sin correo): al guardar, al volver la señal y cada 2 minutos */
-let subiendo=false;
+let subiendo=false,errHoja='';
 async function subirHoja(){if(!C.url||subiendo||!navigator.onLine)return;const p=R.filter(r=>!r.hoja);if(!p.length)return;subiendo=true;
  try{const res=await post({accion:'registrar',sinCorreo:true,token:C.token,punto:C.punto,registros:p});
   if(res.ok){p.forEach(r=>r.hoja=true);persist();if(!$('#v-hoy').hidden)pintarHoy();if(admin&&!$('#v-adm').hidden)pintarListaAdm()}
-  else toast('No se pudo guardar en la hoja: '+(res.error||''),6000)}catch(e){}finally{subiendo=false}}
+  else{errHoja=res.error||'error';toast('No se pudo guardar en la hoja: '+errHoja,8000)}if(res.ok)errHoja=''}catch(e){errHoja=e.message||'sin conexión con Google'}finally{subiendo=false;if(!$('#v-hoy').hidden)pintarHoy()}}
 pintarPlacas();syncRemoto();subirHoja();setInterval(syncRemoto,10*60000);setInterval(subirHoja,2*60000);
 window.addEventListener('online',()=>{syncRemoto();subirHoja()});
 if(!window.Android&&'serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
