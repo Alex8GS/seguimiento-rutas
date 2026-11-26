@@ -171,17 +171,17 @@ $('#fReg').onsubmit=e=>{e.preventDefault();
  const previo=R.find(r=>r.cedula===ced&&r.fecha===hoy()&&r.estado!=='Anulado');
  const guardar=()=>{const d=new Date();
   R.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),fecha:fFecha(d),hora:fHora(d),cedula:ced,placa,uso,cambio,obs:$('#obs').value.trim(),punto:C.punto,estado:'Activo',enviado:false,editado:''});
-  persist();$('#fReg').reset();uso='';cambio='Ninguno';$$('#sUso button').forEach(b=>b.classList.remove('on'));$$('#sCambio button').forEach(b=>b.classList.toggle('on',b.dataset.x==='Ninguno'));
+  persist();subirHoja();$('#fReg').reset();uso='';cambio='Ninguno';$$('#sUso button').forEach(b=>b.classList.remove('on'));$$('#sCambio button').forEach(b=>b.classList.toggle('on',b.dataset.x==='Ninguno'));
   toast('Registro guardado '+fHora(d).slice(0,5));$('#ced').focus()};
  previo?confirmar(`La cédula <b>${esc(ced)}</b> ya se registró hoy a las ${previo.hora.slice(0,5)}. ¿Guardar otro registro?`,guardar,'Guardar de todos modos'):guardar()};
 
 /* Lista de hoy */
-function itemHTML(r,editable){const st=r.estado==='Anulado'?'<span class="pill anul">Anulado</span>':r.enviado?'<span class="pill ok">Enviado</span>':'<span class="pill pend">Pendiente</span>';
+function itemHTML(r,editable){const st=r.estado==='Anulado'?'<span class="pill anul">Anulado</span>':r.enviado?'<span class="pill ok">Enviado</span>':r.hoja?'<span class="pill ok" style="background:var(--g2)">En la hoja</span>':'<span class="pill pend">Pendiente</span>';
  return `<div class="item"><div class="t"><span>${esc(r.cedula)} · ${esc(r.placa)}</span>${st}</div><small>${r.fecha} ${r.hora.slice(0,5)} · Usó ruta: ${esc(r.uso)} · ${esc(r.cambio)}${r.editado?' · editado':''}</small>${r.obs?`<small>${esc(r.obs)}</small>`:''}${editable?`<div class="row"><button class="btn sec" data-ed="${r.id}">Editar</button><button class="btn sec" data-an="${r.id}">${r.estado==='Anulado'?'Reactivar':'Anular'}</button><button class="btn del" data-bo="${r.id}">Borrar</button></div>`:''}</div>`}
 function pintarHoy(){const h=R.filter(r=>r.fecha===hoy()&&r.estado!=='Anulado');
  $('#nHoy').textContent=h.length;$('#nPend').textContent=R.filter(r=>!r.enviado).length;$('#nUso').textContent=h.filter(r=>r.uso==='Sí').length;
  $('#listaHoy').innerHTML=h.length?h.slice().reverse().map(r=>itemHTML(r,false)).join(''):'<p class="hint">Aún no hay registros hoy.</p>';
- $('#estadoEnvio').textContent=C.url?'Envío a Google Sheets'+(C.correo?' y correo':'')+' configurado.':C.correo?'Envío por correo (se abre tu app de correo).':'Sin destino configurado: pide al administrador que lo configure.'}
+ $('#estadoEnvio').textContent=C.url?'Cada registro se guarda solo en Google Sheets (en verde azulado: “En la hoja”). El botón Enviar manda el correo con el resumen.':C.correo?'Envío por correo (se abre tu app de correo).':'Sin destino configurado: pide al administrador que lo configure.'}
 
 /* CSV */
 const COLS=[['id','ID'],['fecha','Fecha'],['hora','Hora'],['cedula','Cédula'],['placa','Placa'],['uso','Usó ruta'],['cambio','Cambio'],['obs','Observaciones'],['punto','Punto/Operador'],['estado','Estado'],['editado','Editado']];
@@ -203,7 +203,7 @@ $('#bEnviar').onclick=async()=>{const pend=R.filter(r=>!r.enviado);if(!pend.leng
   if(C.auto)descargar(pend);
   if(C.url){const res=await post({accion:'registrar',token:C.token,correo:C.correo,punto:C.punto,registros:pend});
    if(!res.ok)throw new Error(res.error||'Respuesta inválida');
-   pend.forEach(r=>r.enviado=true);persist();syncRemoto();toast(`Enviados ${res.recibidos} registros a la hoja`+(res.correo?` y correo enviado a ${res.destino}`:res.correoError?`. Correo NO enviado: ${res.correoError}`:'. La hoja no informó del correo: actualice el script a la última versión'),res.correo?4000:12000);
+   pend.forEach(r=>{r.enviado=true;r.hoja=true});persist();syncRemoto();toast(`Enviados ${res.recibidos} registros a la hoja`+(res.correo?` y correo enviado a ${res.destino}`:res.correoError?`. Correo NO enviado: ${res.correoError}`:'. La hoja no informó del correo: actualice el script a la última versión'),res.correo?4000:12000);
   }else{
    const lineas=pend.map(r=>`${r.fecha} ${r.hora.slice(0,5)} | CC ${r.cedula} | ${r.placa} | Ruta: ${r.uso} | ${r.cambio}${r.obs?' | '+r.obs:''}${r.estado==='Anulado'?' | ANULADO':''}`);
    let cuerpo=`Registros de ${C.punto||'punto sin nombre'} (${pend.length})\n\n`+lineas.join('\n');
@@ -248,9 +248,9 @@ $('#bSyncPlacas').onclick=async()=>{if(!C.url)return toast('Configura y guarda p
 document.addEventListener('click',e=>{const t=e.target;if(!admin)return;
  if(t.dataset.qp!==undefined){const p=P[+t.dataset.qp];confirmar(`¿Quitar la placa ${esc(p)} de la lista?`,()=>{P.splice(+t.dataset.qp,1);save(K.pla,P);pintarPlacas();pintarAdm()})}
  const r=R.find(x=>x.id===(t.dataset.ed||t.dataset.an||t.dataset.bo));if(!r)return;
- if(t.dataset.an){r.estado=r.estado==='Anulado'?'Activo':'Anulado';r.editado=new Date().toLocaleString('es-CO');r.enviado=false;persist();pintarListaAdm();toast('Registro '+r.estado.toLowerCase()+'. Se actualizará en el próximo envío.')}
+ if(t.dataset.an){r.estado=r.estado==='Anulado'?'Activo':'Anulado';r.editado=new Date().toLocaleString('es-CO');r.enviado=false;r.hoja=false;persist();subirHoja();pintarListaAdm();toast('Registro '+r.estado.toLowerCase()+'. Se actualizará en el próximo envío.')}
  if(t.dataset.bo)confirmar(`¿Borrar definitivamente el registro de ${esc(r.cedula)}? Solo se borra de este teléfono; si ya se envió, en la hoja seguirá (mejor usa “Anular”).`,()=>{R=R.filter(x=>x!==r);persist();pintarListaAdm()},'Borrar');
- if(t.dataset.ed)modal(`<h2>Editar registro</h2><small>${r.fecha} ${r.hora}</small><div><label for="eC">Cédula</label><input id="eC" inputmode="numeric" value="${esc(r.cedula)}"></div><div><label for="eP">Placa</label><select id="eP">${[...new Set([r.placa,...P])].map(p=>`<option ${p===r.placa?'selected':''}>${esc(p)}</option>`).join('')}</select></div><div><label for="eU">Usó la ruta</label><select id="eU"><option ${r.uso==='Sí'?'selected':''}>Sí</option><option ${r.uso==='No'?'selected':''}>No</option></select></div><div><label for="eK">Cambio</label><select id="eK">${['Ninguno','Ruta → Moto','Moto → Ruta'].map(c=>`<option ${c===r.cambio?'selected':''}>${c}</option>`).join('')}</select></div><div><label for="eO">Observaciones</label><textarea id="eO">${esc(r.obs)}</textarea></div><div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">Guardar cambios</button></div>`,()=>{$('#mNo').onclick=cerrar;$('#mSi').onclick=()=>{const c=$('#eC').value.replace(/\D/g,'');if(!/^\d{5,12}$/.test(c))return toast('Cédula inválida');Object.assign(r,{cedula:c,placa:$('#eP').value,uso:$('#eU').value,cambio:$('#eK').value,obs:$('#eO').value.trim(),editado:new Date().toLocaleString('es-CO'),enviado:false});persist();cerrar();pintarListaAdm();toast('Cambios guardados. Se actualizarán en la hoja en el próximo envío.')}})});
+ if(t.dataset.ed)modal(`<h2>Editar registro</h2><small>${r.fecha} ${r.hora}</small><div><label for="eC">Cédula</label><input id="eC" inputmode="numeric" value="${esc(r.cedula)}"></div><div><label for="eP">Placa</label><select id="eP">${[...new Set([r.placa,...P])].map(p=>`<option ${p===r.placa?'selected':''}>${esc(p)}</option>`).join('')}</select></div><div><label for="eU">Usó la ruta</label><select id="eU"><option ${r.uso==='Sí'?'selected':''}>Sí</option><option ${r.uso==='No'?'selected':''}>No</option></select></div><div><label for="eK">Cambio</label><select id="eK">${['Ninguno','Ruta → Moto','Moto → Ruta'].map(c=>`<option ${c===r.cambio?'selected':''}>${c}</option>`).join('')}</select></div><div><label for="eO">Observaciones</label><textarea id="eO">${esc(r.obs)}</textarea></div><div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">Guardar cambios</button></div>`,()=>{$('#mNo').onclick=cerrar;$('#mSi').onclick=()=>{const c=$('#eC').value.replace(/\D/g,'');if(!/^\d{5,12}$/.test(c))return toast('Cédula inválida');Object.assign(r,{cedula:c,placa:$('#eP').value,uso:$('#eU').value,cambio:$('#eK').value,obs:$('#eO').value.trim(),editado:new Date().toLocaleString('es-CO'),enviado:false,hoja:false});persist();subirHoja();cerrar();pintarListaAdm();toast('Cambios guardados. Se actualizarán en la hoja en el próximo envío.')}})});
 $('#bCsvAll').onclick=()=>{const f=filtrados();f.length?descargar(f):toast('No hay registros en ese filtro')};
 $('#bReenviar').onclick=()=>{const f=filtrados();confirmar(`¿Marcar ${f.length} registros como pendientes para enviarlos otra vez? (En la hoja no se duplican.)`,()=>{f.forEach(r=>r.enviado=false);persist();pintarListaAdm()})};
 $('#bPurgar').onclick=()=>{const lim=fFecha(new Date(Date.now()-30*864e5)),v=R.filter(r=>r.enviado&&r.fecha<lim);if(!v.length)return toast('No hay registros enviados de más de 30 días');confirmar(`¿Borrar ${v.length} registros ya enviados (anteriores a ${lim}) de este teléfono?`,()=>{R=R.filter(r=>!v.includes(r));persist();pintarListaAdm()},'Borrar')};
@@ -264,7 +264,14 @@ async function syncRemoto(){if(!C.url||!navigator.onLine)return;
   const bloq=r.activa===false;$$('#fReg input,#fReg select,#fReg textarea,#fReg button').forEach(e=>e.disabled=bloq);
   if(bloq){av.hidden=false;av.textContent='La app está desactivada por el administrador. Los registros guardados se conservan.'}
  }catch(e){}}
-pintarPlacas();syncRemoto();setInterval(syncRemoto,10*60000);window.addEventListener('online',syncRemoto);
+/* Sincronización automática con la hoja (sin correo): al guardar, al volver la señal y cada 2 minutos */
+let subiendo=false;
+async function subirHoja(){if(!C.url||subiendo||!navigator.onLine)return;const p=R.filter(r=>!r.hoja);if(!p.length)return;subiendo=true;
+ try{const res=await post({accion:'registrar',sinCorreo:true,token:C.token,punto:C.punto,registros:p});
+  if(res.ok){p.forEach(r=>r.hoja=true);persist();if(!$('#v-hoy').hidden)pintarHoy();if(admin&&!$('#v-adm').hidden)pintarListaAdm()}
+  else toast('No se pudo guardar en la hoja: '+(res.error||''),6000)}catch(e){}finally{subiendo=false}}
+pintarPlacas();syncRemoto();subirHoja();setInterval(syncRemoto,10*60000);setInterval(subirHoja,2*60000);
+window.addEventListener('online',()=>{syncRemoto();subirHoja()});
 if(!window.Android&&'serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>

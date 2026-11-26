@@ -91,6 +91,7 @@ function doPost(e){
     upsert(regs);
     let correo = false, correoError = '';
     const dest = (leerConfig().correo || d.correo || '').replace(/\s/g, '');
+    if (d.sinCorreo) return json({ok:true, recibidos:regs.length, correo:false});  // sincronización automática
     if (!dest) correoError = 'No hay correo destino configurado (pestaña Config o Admin de la app)';
     else if (regs.length){
       try {
