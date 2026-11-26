@@ -18,7 +18,7 @@
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0;min-height:100vh;background:radial-gradient(1200px 500px at 50% -200px,color-mix(in srgb,var(--g2) 18%,transparent),transparent),var(--bg);color:var(--fg);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header{position:sticky;top:0;z-index:5;background:linear-gradient(120deg,var(--g1),var(--g2));color:#fff;padding:calc(14px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));display:flex;align-items:center;gap:12px;box-shadow:0 4px 18px rgba(0,0,0,.18)}
-header .logo{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:20px}
+header .logo{width:38px;height:38px;border-radius:10px;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
 header h1{font:700 18px/1.1 Poppins,Inter,sans-serif;margin:0;flex:1;letter-spacing:.2px}
 header h1 small{display:block;font:500 12px Inter,sans-serif;opacity:.85;letter-spacing:.3px}
 #reloj{font:600 15px Poppins,sans-serif;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.16);padding:6px 10px;border-radius:10px}
@@ -68,7 +68,7 @@ h2{font:700 17px Poppins,sans-serif;margin:0}
 </style>
 </head>
 <body>
-<header><div class="logo">🚌</div><h1>Seguimiento de Rutas<small>Registro diario</small></h1><span id="reloj"></span><button id="bAdmin">🔒 Admin</button></header>
+<header><img class="logo" src="icon.svg" alt=""><h1>Seguimiento de Rutas<small>Registro diario</small></h1><span id="reloj"></span><button id="bAdmin">Admin</button></header>
 <nav><button data-v="reg" class="on">Registrar</button><button data-v="hoy">Registros de hoy</button><button data-v="adm" id="tabAdm" hidden>Administrador</button></nav>
 <main>
 <!-- REGISTRAR -->
@@ -221,8 +221,8 @@ $('#bAdmin').onclick=()=>{if(admin)return ver('adm');
  modal(`<h2>Acceso de administrador</h2><input id="mPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN"><div class="row"><button class="btn sec" id="mNo">Cancelar</button><button class="btn" id="mSi">Entrar</button></div><p class="hint">${load(K.pin,null)?'':'PIN inicial: 1234. Cámbialo al entrar.'}</p>`,()=>{$('#mPin').focus();$('#mNo').onclick=cerrar;
   const go=async()=>{if(await hash($('#mPin').value)===await pinGuardado()){save(K.bloq,{n:0,hasta:0});cerrar();entrar()}else{b.n++;if(b.n>=5){b.hasta=Date.now()+5*60000;b.n=0}save(K.bloq,b);cerrar();toast('PIN incorrecto')}};
   $('#mSi').onclick=go;$('#mPin').onkeydown=e=>{if(e.key==='Enter')go()}})};
-function entrar(){admin=true;$('#tabAdm').hidden=false;$('#bAdmin').textContent='🔓 Admin';ver('adm');reloj5();if(!load(K.pin,null))setTimeout(cambiarPin,300)}
-function salir(){admin=false;$('#tabAdm').hidden=true;$('#bAdmin').textContent='🔒 Admin';ver('reg')}
+function entrar(){admin=true;$('#tabAdm').hidden=false;$('#bAdmin').textContent="Admin ✓";ver('adm');reloj5();if(!load(K.pin,null))setTimeout(cambiarPin,300)}
+function salir(){admin=false;$('#tabAdm').hidden=true;$('#bAdmin').textContent="Admin";ver('reg')}
 function reloj5(){clearTimeout(admTimer);if(admin)admTimer=setTimeout(()=>{salir();toast('Sesión de administrador cerrada por inactividad')},5*60000)}
 ['click','keydown'].forEach(ev=>document.addEventListener(ev,reloj5));
 $('#bSalir').onclick=salir;
