@@ -89,22 +89,40 @@ function doPost(e){
     // ---- Registro desde los teléfonos ----
     const regs = d.registros || [];
     upsert(regs);
-    let correo = false;
-    const dest = leerConfig().correo || d.correo;
-    if (dest && regs.length){
-      const filas = regs.map(r => `<tr><td>${r.fecha} ${r.hora}</td><td>${r.cedula}</td><td>${r.placa}</td><td>${r.uso}</td><td>${r.cambio}</td><td>${(r.obs||'').replace(/</g,'&lt;')}</td><td>${r.estado}</td></tr>`).join('');
-      MailApp.sendEmail({
-        to: dest,
-        subject: `Registros de rutas ${regs[0].fecha} — ${d.punto || 'sin punto'} (${regs.length})`,
-        htmlBody: `<p>Se recibieron <b>${regs.length}</b> registros desde <b>${d.punto || 'la app'}</b>.</p>
-          <table border="1" cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:13px">
-          <tr style="background:#0b3d91;color:#fff"><th>Fecha/hora</th><th>Cédula</th><th>Placa</th><th>Usó ruta</th><th>Cambio</th><th>Observaciones</th><th>Estado</th></tr>${filas}</table>
-          <p><a href="${SpreadsheetApp.getActiveSpreadsheet().getUrl()}">Abrir la hoja</a></p>`
-      });
-      correo = true;
+    let correo = false, correoError = '';
+    const dest = (leerConfig().correo || d.correo || '').replace(/\s/g, '');
+    if (!dest) correoError = 'No hay correo destino configurado (pestaña Config o Admin de la app)';
+    else if (regs.length){
+      try {
+        const filas = regs.map(r => `<tr><td>${r.fecha} ${r.hora}</td><td>${r.cedula}</td><td>${r.placa}</td><td>${r.uso}</td><td>${r.cambio}</td><td>${(r.obs||'').replace(/</g,'&lt;')}</td><td>${r.estado}</td></tr>`).join('');
+        MailApp.sendEmail({
+          to: dest,
+          subject: `Registros de rutas ${regs[0].fecha} — ${d.punto || 'sin punto'} (${regs.length})`,
+          htmlBody: `<p>Se recibieron <b>${regs.length}</b> registros desde <b>${d.punto || 'la app'}</b>.</p>
+            <table border="1" cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:13px">
+            <tr style="background:#0b3d91;color:#fff"><th>Fecha/hora</th><th>Cédula</th><th>Placa</th><th>Usó ruta</th><th>Cambio</th><th>Observaciones</th><th>Estado</th></tr>${filas}</table>
+            <p><a href="${SpreadsheetApp.getActiveSpreadsheet().getUrl()}">Abrir la hoja</a></p>`
+        });
+        correo = true;
+      } catch (err) {
+        // Los registros ya quedaron guardados en la hoja; solo falló el correo.
+        correoError = String(err.message || err);
+      }
     }
-    return json({ok:true, recibidos:regs.length, correo});
+    return json({ok:true, recibidos:regs.length, correo, correoError, destino:dest});
   } catch(err){
     return json({ok:false, error:String(err)});
   } finally { lock.releaseLock(); }
+}
+
+/**
+ * PRUEBA DEL CORREO: selecciónela arriba en el editor y pulse ▶ Ejecutar.
+ * La primera vez Google pedirá permiso para enviar correos: acéptelo.
+ * Luego revise el "Registro de ejecución" abajo.
+ */
+function probarCorreo(){
+  const dest = (leerConfig().correo || Session.getEffectiveUser().getEmail()).replace(/\s/g, '');
+  Logger.log('Correos que aún puede enviar hoy: ' + MailApp.getRemainingDailyQuota());
+  MailApp.sendEmail(dest, 'Prueba · Seguimiento de Rutas', 'Si recibe este mensaje, el envío de correos funciona correctamente.');
+  Logger.log('Correo de prueba enviado a: ' + dest);
 }

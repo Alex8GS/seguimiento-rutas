@@ -141,7 +141,8 @@ const fFecha=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fHora=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 const hoy=()=>fFecha(new Date());
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,3000)}
+function toast(m,ms=3000){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,ms)}
+$('#toast').onclick=()=>$('#toast').hidden=true;
 function persist(){save(K.rec,R)}
 async function hash(s){s='sr-salt|'+s;try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return 'f'+h}}
 
@@ -202,7 +203,7 @@ $('#bEnviar').onclick=async()=>{const pend=R.filter(r=>!r.enviado);if(!pend.leng
   if(C.auto)descargar(pend);
   if(C.url){const res=await post({accion:'registrar',token:C.token,correo:C.correo,punto:C.punto,registros:pend});
    if(!res.ok)throw new Error(res.error||'Respuesta inválida');
-   pend.forEach(r=>r.enviado=true);persist();syncRemoto();toast(`Enviados ${res.recibidos} registros`+(res.correo?' y correo enviado':''));
+   pend.forEach(r=>r.enviado=true);persist();syncRemoto();toast(`Enviados ${res.recibidos} registros a la hoja`+(res.correo?` y correo enviado a ${res.destino}`:res.correoError?`. Correo NO enviado: ${res.correoError}`:'. La hoja no informó del correo: actualice el script a la última versión'),res.correo?4000:12000);
   }else{
    const lineas=pend.map(r=>`${r.fecha} ${r.hora.slice(0,5)} | CC ${r.cedula} | ${r.placa} | Ruta: ${r.uso} | ${r.cambio}${r.obs?' | '+r.obs:''}${r.estado==='Anulado'?' | ANULADO':''}`);
    let cuerpo=`Registros de ${C.punto||'punto sin nombre'} (${pend.length})\n\n`+lineas.join('\n');
